@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+datos/entrada/*
+datos/salida/*
+
+# Se conservan las carpetas
+!datos/entrada/Aqui_van_los_ficheros.txt .gitkeep
