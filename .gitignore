@@ -7,5 +7,9 @@ dist/
 datos/entrada/*
 datos/salida/*
 
+# Caches de herramientas
+.ruff_cache/
+.pytest_cache/
+
 # Se conservan las carpetas
 !datos/entrada/Aqui_van_los_ficheros.txt .gitkeep
