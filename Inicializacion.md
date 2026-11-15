@@ -67,8 +67,7 @@ Los documentos PDF originales deberán seleccionarse desde la interfaz de la apl
 - El entorno virtual debe estar activado antes de ejecutar el proyecto
 - Las dependencias se encuentran registradas en `requirements.txt`
 - No es necesario instalar las librerías individualmente
-- La carpeta `.venv` no debe compartirse ni incluirse en el repositorio
-- Los modelos lingüísticos y recursos adicionales se instalarán cuando sean necesarios para las funcionalidades correspondientes
+- La carpeta `.datos\entrada` no debe compartirse ni incluirse en el repositorio, ya que es información confidencial de los documentos originales
 
 ---
 

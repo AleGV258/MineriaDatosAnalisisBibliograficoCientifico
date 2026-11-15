@@ -1,265 +1,272 @@
+"""Ventana principal de la aplicación.
+
+Interfaz con CustomTkinter: selección de la carpeta de protocolos,
+listado de los PDF, conversión a TXT, análisis de frecuencias con
+sus gráficas en pestañas y exportación a CSV/JSON/PNG.
+"""
+
+from pathlib import Path
 
 import customtkinter as ctk
 from tkinter import filedialog, ttk, messagebox
 
-from procesamiento.buscarArchivosPDF import buscarArchivosPDF
-from procesamiento.convertirArchivosTXT import convertirArchivosTXT
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+from procesamiento.ConvertirPDF.buscarArchivosPDF import buscar_archivos_PDF
+from procesamiento.ConvertirPDF.convertirArchivosTXT import convertir_archivos_TXT
+from procesamiento.ExcluirCitas.extraerReferencias import analizar_documento
+from procesamiento.AnalisisFrecuencias.analizarFrecuencias import frecuencias
+from procesamiento.Graficas.graficarFrecuencias import generar_graficas, guardar_graficas
+from procesamiento.ExportarCSV.exportarCSV import exportar_frecuencias_CSV
+from procesamiento.ExportarCSV.exportarJSON import exportar_citas_JSON, exportar_frecuencias_JSON
 
 class VentanaPrincipal(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-
-        # Se configura la ventana principal
         self.title("Minería de Textos")
         self.geometry("1100x700")
 
-        # Se inicializan las variables
-        self.ruta_directorio = ""
-        self.archivos_pdf = []
+        self.rutaDirectorio = ""
+        self.archivosPDF = []
+        self.resultadosReferencias = []
+        self.tablaFrecuencias = {}
 
-        # Se crea la interfaz
         self.crear_interfaz()
 
     def crear_interfaz(self):
-
-        # Se crea el título principal
-        self.etiqueta_titulo = ctk.CTkLabel(
+        """Arma toda la ventana: título, selector de carpeta y paneles."""
+        self.etiquetaTitulo = ctk.CTkLabel(
             self,
             text="Minería de Textos",
             font=("Arial", 24, "bold")
         )
-        self.etiqueta_titulo.pack(pady=15)
+        self.etiquetaTitulo.pack(pady=15)
 
-        # Se crea el contenedor de selección de carpeta
-        self.contenedor_seleccion = ctk.CTkFrame(self)
-        self.contenedor_seleccion.pack(
-            fill="x",
-            padx=20,
-            pady=10
-        )
+        # Barra de arriba para elegir la carpeta de protocolos
+        self.contenedorSeleccion = ctk.CTkFrame(self)
+        self.contenedorSeleccion.pack(fill="x", padx=20, pady=10)
 
-        # Se crea el botón para seleccionar una carpeta
-        self.boton_seleccionar = ctk.CTkButton(
-            self.contenedor_seleccion,
+        self.botonSeleccionar = ctk.CTkButton(
+            self.contenedorSeleccion,
             text="Seleccionar carpeta",
             command=self.seleccionar_directorio
         )
+        self.botonSeleccionar.pack(side="left", padx=10, pady=10)
 
-        self.boton_seleccionar.pack(
-            side="left",
-            padx=10,
-            pady=10
-        )
-
-        # Se muestra la ruta seleccionada
-        self.etiqueta_ruta = ctk.CTkLabel(
-            self.contenedor_seleccion,
+        self.etiquetaRuta = ctk.CTkLabel(
+            self.contenedorSeleccion,
             text="Ninguna carpeta seleccionada",
             anchor="w"
         )
-        self.etiqueta_ruta.pack(
-            side="left",
-            padx=10,
-            fill="x",
-            expand=True
-        )
+        self.etiquetaRuta.pack(side="left", padx=10, fill="x", expand=True)
 
-        # Se crea el contenedor principal de los paneles
-        self.contenedor_principal = ctk.CTkFrame(self)
-        self.contenedor_principal.pack(
-            fill="both",
-            expand=True,
-            padx=20,
-            pady=10
-        )
+        # Contenedor principal dividido en panel izquierdo y derecho
+        self.contenedorPrincipal = ctk.CTkFrame(self)
+        self.contenedorPrincipal.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # Se crea el panel izquierdo para los documentos
-        self.panel_documentos = ctk.CTkFrame(
-            self.contenedor_principal,
+        self.panelDocumentos = ctk.CTkFrame(
+            self.contenedorPrincipal,
             width=300
         )
-        self.panel_documentos.pack(
-            side="left",
-            fill="y",
-            padx=(5, 10),
-            pady=5
-        )
-        self.panel_documentos.pack_propagate(False)
+        self.panelDocumentos.pack(side="left", fill="y", padx=(5, 10), pady=5)
+        self.panelDocumentos.pack_propagate(False)
 
-        # Se crea el título del panel de documentos
-        self.etiqueta_documentos = ctk.CTkLabel(
-            self.panel_documentos,
+        self.etiquetaDocumentos = ctk.CTkLabel(
+            self.panelDocumentos,
             text="Documentos PDF",
             font=("Arial", 16, "bold")
         )
-        self.etiqueta_documentos.pack(pady=10)
+        self.etiquetaDocumentos.pack(pady=10)
 
-        # Se muestra la cantidad de documentos encontrados
-        self.etiqueta_contador = ctk.CTkLabel(
-            self.panel_documentos,
+        self.etiquetaContador = ctk.CTkLabel(
+            self.panelDocumentos,
             text="Documentos encontrados: 0"
         )
-        self.etiqueta_contador.pack(pady=5)
+        self.etiquetaContador.pack(pady=5)
 
-        # Se crea el botón para actualizar el listado
-        self.boton_actualizar = ctk.CTkButton(
-            self.panel_documentos,
+        self.botonActualizar = ctk.CTkButton(
+            self.panelDocumentos,
             text="Actualizar listado",
             command=self.actualizar_listado
         )
-        self.boton_actualizar.pack(
-            fill="x",
-            padx=10,
-            pady=5
-        )
+        self.botonActualizar.pack(fill="x", padx=10, pady=5)
 
-        # Se crea el contenedor de la tabla
-        self.contenedor_tabla = ctk.CTkFrame(
-            self.panel_documentos
-        )
-        self.contenedor_tabla.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10
-        )
+        # Tabla con el nombre de cada PDF encontrado
+        self.contenedorTabla = ctk.CTkFrame(self.panelDocumentos)
+        self.contenedorTabla.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Se crea la tabla de documentos con una sola columna
-        self.tabla_documentos = ttk.Treeview(
-            self.contenedor_tabla,
+        self.tablaDocumentos = ttk.Treeview(
+            self.contenedorTabla,
             columns=("nombre",),
             show="headings"
         )
+        self.tablaDocumentos.heading("nombre", text="Nombre del fichero")
+        self.tablaDocumentos.column("nombre", width=270, anchor="w", stretch=False)
 
-        # Se configura el encabezado
-        self.tabla_documentos.heading(
-            "nombre",
-            text="Nombre del fichero"
-        )
-
-        # Se configura el ancho de la columna
-        self.tabla_documentos.column(
-            "nombre",
-            width=270,
-            anchor="w",
-            stretch=False
-        )
-
-        # Se crea la barra de desplazamiento
-        self.barra_desplazamiento = ttk.Scrollbar(
-            self.contenedor_tabla,
+        self.barraDesplazamiento = ttk.Scrollbar(
+            self.contenedorTabla,
             orient="vertical",
-            command=self.tabla_documentos.yview
+            command=self.tablaDocumentos.yview
         )
+        self.tablaDocumentos.configure(yscrollcommand=self.barraDesplazamiento.set)
 
-        # Se conecta la barra de desplazamiento con la tabla
-        self.tabla_documentos.configure(
-            yscrollcommand=self.barra_desplazamiento.set
-        )
+        self.tablaDocumentos.pack(side="left", fill="both", expand=True)
+        self.barraDesplazamiento.pack(side="right", fill="y")
 
-        # Se posicionan la tabla y la barra de desplazamiento
-        self.tabla_documentos.pack(
-            side="left",
-            fill="both",
-            expand=True
-        )
-
-        self.barra_desplazamiento.pack(
-            side="right",
-            fill="y"
-        )
-
-        # Se crea el botón para convertir los documentos
-        self.boton_convertir = ctk.CTkButton(
-            self.panel_documentos,
+        # Botones del flujo: convertir, analizar y exportar
+        self.botonConvertir = ctk.CTkButton(
+            self.panelDocumentos,
             text="Convertir a TXT",
             command=self.iniciar_conversion,
             height=40
         )
-        self.boton_convertir.pack(
-            fill="x",
-            padx=10,
-            pady=(0, 10)
-        )
+        self.botonConvertir.pack(fill="x", padx=10, pady=(0, 10))
 
-        # Se crea el panel derecho para las gráficas
-        self.panel_graficas = ctk.CTkFrame(
-            self.contenedor_principal
+        self.botonAnalisis = ctk.CTkButton(
+            self.panelDocumentos,
+            text="Realizar análisis de frecuencias",
+            command=self.iniciar_analisis,
+            height=40
         )
-        self.panel_graficas.pack(
-            side="left",
-            fill="both",
-            expand=True,
-            padx=(0, 5),
-            pady=5
-        )
+        self.botonAnalisis.pack(fill="x", padx=10, pady=(0, 10))
 
-        # Se crea el título del panel de gráficas
-        self.etiqueta_graficas = ctk.CTkLabel(
-            self.panel_graficas,
+        self.botonExportar = ctk.CTkButton(
+            self.panelDocumentos,
+            text="Exportar a CSV",
+            command=self.iniciar_exportacion,
+            height=40
+        )
+        self.botonExportar.pack(fill="x", padx=10, pady=(0, 10))
+
+        # Panel derecho: aquí se dibujan las gráficas por variable
+        self.panelGraficas = ctk.CTkFrame(self.contenedorPrincipal)
+        self.panelGraficas.pack(side="left", fill="both", expand=True, padx=(0, 5), pady=5)
+
+        self.etiquetaGraficas = ctk.CTkLabel(
+            self.panelGraficas,
             text="Análisis de frecuencias",
             font=("Arial", 18, "bold")
         )
-        self.etiqueta_graficas.pack(pady=20)
+        self.etiquetaGraficas.pack(pady=20)
 
-        # Se muestra un mensaje inicial en el panel de gráficas
-        self.etiqueta_mensaje = ctk.CTkLabel(
-            self.panel_graficas,
+        self.etiquetaMensaje = ctk.CTkLabel(
+            self.panelGraficas,
             text="Análisis de frecuencias",
             text_color="gray"
         )
-        self.etiqueta_mensaje.pack(pady=20)
+        self.etiquetaMensaje.pack(pady=20)
 
     def seleccionar_directorio(self):
-        # Se abre el explorador de carpetas
-        ruta_seleccionada = filedialog.askdirectory()
-
-        # Se comprueba que se haya seleccionado una carpeta
-        if ruta_seleccionada:
-            self.ruta_directorio = ruta_seleccionada
-            self.etiqueta_ruta.configure(text=self.ruta_directorio)
+        """Abre el explorador de carpetas y carga el listado de PDFs."""
+        rutaSeleccionada = filedialog.askdirectory()
+        if rutaSeleccionada:
+            self.rutaDirectorio = rutaSeleccionada
+            self.etiquetaRuta.configure(text=self.rutaDirectorio)
             self.actualizar_listado()
 
     def actualizar_listado(self):
-        # Se comprueba que exista una carpeta seleccionada
-        if not self.ruta_directorio:
+        """Vuelve a buscar los PDF de la carpeta y refresca la tabla."""
+        if not self.rutaDirectorio:
             return
+        self.archivosPDF = buscar_archivos_PDF(self.rutaDirectorio)
 
-        # Se buscan los documentos PDF
-        self.archivos_pdf = buscarArchivosPDF(self.ruta_directorio)
+        for elemento in self.tablaDocumentos.get_children():
+            self.tablaDocumentos.delete(elemento)
 
-        # Se eliminan los registros anteriores de la tabla
-        for elemento in self.tabla_documentos.get_children():
-            self.tabla_documentos.delete(elemento)
+        for archivo in self.archivosPDF:
+            self.tablaDocumentos.insert("", "end", values=(archivo["nombre"],))
 
-        # Se agregan los documentos encontrados a la tabla
-        for archivo in self.archivos_pdf:
-            self.tabla_documentos.insert(
-                "",
-                "end",
-                values=(archivo["nombre"],)
-            )
-
-        # Se actualiza el contador de documentos
-        self.etiqueta_contador.configure(
-            text=f"Documentos encontrados: {len(self.archivos_pdf)}"
+        self.etiquetaContador.configure(
+            text=f"Documentos encontrados: {len(self.archivosPDF)}"
         )
 
     def iniciar_conversion(self):
-        # Se comprueba que existan documentos para convertir
-        if not self.archivos_pdf:
+        """Convierte los PDF de la lista a TXT en 'datos/salida'."""
+        if not self.archivosPDF:
             messagebox.showwarning(
                 "Sin documentos",
                 "No hay archivos PDF para convertir"
             )
             return
 
-        # Se inicia la conversión de los documentos
-        archivos_convertidos = convertirArchivosTXT(self.archivos_pdf)
+        archivosConvertidos = convertir_archivos_TXT(self.archivosPDF)
 
-        # Se muestra el resultado de la conversión
         messagebox.showinfo(
             "Conversión finalizada",
-            f"Se convirtieron {len(archivos_convertidos)} documentos correctamente"
+            f"Se convirtieron {len(archivosConvertidos)} documentos correctamente"
         )
+
+    def iniciar_analisis(self):
+        """Analiza los TXT de 'datos/salida' y genera frecuencias, gráficas y JSON."""
+        carpetaSalida = Path(__file__).resolve().parents[1] / "datos" / "salida"
+        archivosTXT = sorted(carpetaSalida.glob("*.txt"))
+
+        if not archivosTXT:
+            messagebox.showwarning(
+                "Sin documentos",
+                "No hay archivos TXT para analizar, primero convierte los PDF"
+            )
+            return
+
+        self.resultadosReferencias = [
+            analizar_documento(txt) for txt in archivosTXT
+        ]
+        self.tablaFrecuencias = frecuencias(self.resultadosReferencias)
+        self.mostrar_graficas()
+        exportar_citas_JSON(self.resultadosReferencias)
+        exportar_frecuencias_JSON(self.tablaFrecuencias)
+
+        totalValidas = sum(r["n_validas"] for r in self.resultadosReferencias)
+        messagebox.showinfo(
+            "Análisis finalizado",
+            f"Se analizaron {len(archivosTXT)} documentos\n"
+            f"Citas válidas: {totalValidas}"
+        )
+
+    def iniciar_exportacion(self):
+        """Exporta el análisis a CSV y guarda las gráficas como PNG."""
+        if not self.resultadosReferencias:
+            messagebox.showwarning(
+                "Sin análisis",
+                "Primero realiza el análisis de frecuencias"
+            )
+            return
+
+        rutaCSV = exportar_frecuencias_CSV(self.resultadosReferencias)
+
+        carpetaGraficas = (
+            Path(__file__).resolve().parents[1] / "datos" / "salida" / "graficas"
+        )
+        guardar_graficas(self.figurasFrecuencias, carpetaGraficas)
+
+        messagebox.showinfo(
+            "Exportación finalizada",
+            f"Se guardó el CSV en:\n{rutaCSV}\n\n"
+            f"Las gráficas en:\n{carpetaGraficas}"
+        )
+
+    def mostrar_graficas(self):
+        """Dibuja las frecuencias en pestañas, una por variable."""
+        # Se limpian los widgets anteriores del panel derecho
+        for widget in self.panelGraficas.winfo_children():
+            if widget != self.etiquetaGraficas:
+                widget.destroy()
+
+        self.figurasFrecuencias = generar_graficas(self.tablaFrecuencias)
+
+        nombres = {
+            "autores": "Autores",
+            "titulos": "Títulos",
+            "anios": "Años",
+            "editoriales": "Editoriales",
+        }
+        self.pestanasFrecuencias = ctk.CTkTabview(self.panelGraficas)
+        self.pestanasFrecuencias.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        # Cada figura de matplotlib se incrusta en su pestaña
+        for clave, figura in self.figurasFrecuencias.items():
+            pestana = self.pestanasFrecuencias.add(nombres.get(clave, clave))
+            lienzo = FigureCanvasTkAgg(figura, pestana)
+            lienzo.draw()
+            lienzo.get_tk_widget().pack(fill="both", expand=True)
