@@ -1,7 +1,7 @@
 from collections import Counter
 import pandas as pd
 
-from procesamiento.AnalisisFrecuencias.dividirCita import dividir_cita
+from procesamiento.AnalisisFrecuencias.dividirCita import tokenizar_cita
 
 
 def contar_autores(citas: list[str]) -> pd.DataFrame:
@@ -12,7 +12,7 @@ def contar_autores(citas: list[str]) -> pd.DataFrame:
     """
     conteo: Counter = Counter()
     for cita in citas:
-        for autor in dict.fromkeys(dividir_cita(cita)["autores"]):
+        for autor in dict.fromkeys(tokenizar_cita(cita)["autores"]):
             if autor:
                 conteo[autor] += 1
     return _a_dataframe(conteo)

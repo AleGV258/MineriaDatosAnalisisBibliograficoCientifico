@@ -55,6 +55,7 @@ _RE_AUTOR_INSTITUCIONAL = re.compile(
 _VENTANA_CITA = 60
 
 
+# Etapa de _normalizar: normaliza el texto (una línea, sin espacios dobles)
 def _normalizar(texto: str) -> str:
     return " ".join(texto.split())
 

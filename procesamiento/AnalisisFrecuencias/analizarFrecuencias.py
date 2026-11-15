@@ -20,6 +20,7 @@ def frecuencias(resultados) -> dict:
 
     Regresa un dict con las claves 'autores', 'titulos', 'anios' y 'editoriales', donde cada valor es un DataFrame con columnas 'valor' y 'frecuencia'. Es la entrada que espera 'Graficas.graficarFrecuencias.generar_graficas'
     """
+    # Etapa de análisis de frecuencias: cada variable usa su propio contador
     citas = _recolectar_citas(resultados)
     return {
         "autores": contar_autores(citas),

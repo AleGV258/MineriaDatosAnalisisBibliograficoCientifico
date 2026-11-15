@@ -34,11 +34,13 @@ _RE_VOLUMEN = re.compile(r"\d+(?:\(\d+\))?(?:[.,]\s*\d+)*")
 _RE_PAREN_DATOS = re.compile(r"\((?:Vol|Issue|Núm|Num)\b[^)]*\)")
 
 
-def _normalizar(texto: str) -> str:
+# Limpieza: normaliza la cita (una línea, sin espacios dobles)
+def _limpieza(texto: str) -> str:
     return " ".join(texto.split())
 
 
-def dividir_cita(cita: str) -> dict:
+# Tokenizador: divide una cita en autores, año, título y editorial
+def tokenizar_cita(cita: str) -> dict:
     """
     Parte una cita APA 7 en autores, año, título y editorial
 
@@ -46,7 +48,7 @@ def dividir_cita(cita: str) -> dict:
     El proceso se basa en localizar el año entre paréntesis, todo lo anterior es el bloque de autores; lo que sigue al año se parte por puntos y el primer segmento es el título, el resto es la fuente de donde se saca la editorial (se corta en el enlace y en la primera coma para quitar volumen, número y páginas)
     Regresa un diccionario con las claves 'autores' (lista de apellidos), 'anio', 'titulo' y 'editorial'. Las fechas sin año ('n.d.' / 's.f.') se homologan como '"s/f"'. Si alguna parte no se puede extraer queda vacía; los contadores ignoran los vacíos
     """
-    cita = _normalizar(cita)
+    cita = _limpieza(cita)
 
     anio = _RE_ANIO.search(cita)
     if anio is None:
@@ -62,7 +64,7 @@ def dividir_cita(cita: str) -> dict:
         else [_nombre_autor(bloqueAutores)] if bloqueAutores else []
     )
 
-    # Las fechas sin dígitos (n.d., s.f.) se unifican como "s/f"
+    # Transformación: las fechas sin dígitos (n.d., s.f.) se homologan como "s/f" para que todas se vean igual
     anioValor = anio.group("anio").strip()
     if not anioValor.isdigit():
         anioValor = "s/f"
@@ -80,7 +82,7 @@ def dividir_cita(cita: str) -> dict:
         s.replace("\x00", " ") for s in re.split(r"\.\s+", resto_protegido) if s
     ]
     titulo = segmentos[0].strip() if segmentos else ""
-    # Por si el enlace o la fecha de consulta quedaron pegados al título
+    # Transformación: se quitan del título el enlace y la fecha de consulta si quedaron pegados
     cortes_titulo = [
         m.start()
         for m in (_RE_URL.search(titulo), _RE_CONSULTA.search(titulo))
@@ -88,6 +90,7 @@ def dividir_cita(cita: str) -> dict:
     ]
     if cortes_titulo:
         titulo = titulo[: min(cortes_titulo)].strip()
+    # Transformación: se quitan los paréntesis de volumen/número del título y de la editorial para estandarizar el valor
     titulo = _RE_PAREN_DATOS.sub("", titulo).strip().rstrip(".")
     fuente = " ".join(segmentos[1:]) if len(segmentos) > 1 else ""
 

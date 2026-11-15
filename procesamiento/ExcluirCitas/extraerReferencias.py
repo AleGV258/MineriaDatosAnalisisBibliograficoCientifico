@@ -50,9 +50,11 @@ def analizar_documento(rutaTXT: str | Path) -> dict:
 
     Lee el TXT, separa cuerpo y referencias, extrae las citas y les aplica el filtro APA 7 + citación en cuerpo. Devuelve un dict con 'documento', 'ruta', 'validas', 'excluidas' (cada una con su 'motivo'), 'total', 'n_validas' y 'n_excluidas'
     """
+    # Se lee el TXT completo y se divide en cuerpo y referencias
     ruta = Path(rutaTXT)
     texto = ruta.read_text(encoding="utf-8", errors="replace")
     cuerpo, seccion = separar_documento(texto)
+    # Se extraen las citas y se aplica el filtro APA 7 + citación en cuerpo
     resultado = filtrar_citas(extraer_citas(seccion), cuerpo)
     return {
         "documento": ruta.stem,
