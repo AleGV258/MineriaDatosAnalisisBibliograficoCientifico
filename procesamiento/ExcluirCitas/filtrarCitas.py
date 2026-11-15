@@ -1,26 +1,22 @@
-"""Filtro de citas bibliográficas según el formato APA 7.
+"""
+Filtro de citas bibliográficas según el formato APA 7.
 
-Dado el texto de una sección de referencias y el cuerpo
-del documento, este módulo:
+Dado el texto de una sección de referencias y el cuerpo del documento, este módulo:
 
-1. separa el texto en citas individuales ('extraer_citas'),
-2. valida la estructura APA 7 de cada cita ('es_apa7'),
-3. comprueba que la cita aparezca en el cuerpo ('cita_en_cuerpo'), y
-4. devuelve válidas y excluidas con su motivo ('filtrar_citas').
+- separa el texto en citas individuales ('extraer_citas'),
+- valida la estructura APA 7 de cada cita ('es_apa7'),
+- comprueba que la cita aparezca en el cuerpo ('cita_en_cuerpo'), y
+- devuelve válidas y excluidas con su motivo ('filtrar_citas').
 
-Formato observado en el corpus real (F-50-01, protocolo C1, sección
-"XI. REFERENCIAS BIBLIOGRÁFICAS"):
+Formato observado en el corpus real (F-50-01, protocolo C1, sección "XI. REFERENCIAS BIBLIOGRÁFICAS"):
 
     Apellido, I., & Apellido, I. (Año). Título. Fuente, vol(núm), págs. https://doi.org/...
     Organismo Institucional. (Año). Título del informe.
     Apellido, I. (n.d.). Título. https://...
 
-Las citas van sin numerar, envueltas en varias líneas y mezcladas con
-números de página y la firma de la autora; 'extraer_citas' tolera ese ruido.
+Las citas van sin numerar, envueltas en varias líneas y mezcladas con números de página y la firma de la autora, 'extraer_citas' tolera ese ruido
 """
 
-
-from __future__ import annotations
 
 import re
 
@@ -38,8 +34,7 @@ _RE_INICIO_CITA = re.compile(r"^[A-ZÁÉÍÓÚÜÑ]")
 _RE_LINEA_RUIDO = re.compile(r"^\s*\d{1,3}\s*$")
 _RE_ENCABEZADO = re.compile(r"REFERENCIA|BIBLIOGRAF", re.IGNORECASE)
 
-# Firma o nota final: 2 a 5 palabras capitalizadas sin puntuación
-# ("Ruth Aurelia Soto Fuentes")
+# Firma o nota final: 2 a 5 palabras capitalizadas sin puntuación ("Ruth Aurelia Soto Fuentes")
 _RE_FIN_SECCION = re.compile(
     r"^[A-ZÁÉÍÓÚÜÑ][a-záéíóúñü]+(?:\s+[A-ZÁÉÍÓÚÜÑ][a-záéíóúñü]+){1,4}$"
 )
@@ -50,8 +45,7 @@ _RE_URL = re.compile(r"https?://|doi\.org|orcid\.org", re.IGNORECASE)
 # Autor con iniciales: "Abreu, E." / "Rodríguez, A., & Balbuena, M."
 _RE_AUTOR_INICIALES = re.compile(r"^[A-ZÁÉÍÓÚÜÑ][\w\-']+\s*,\s*[A-ZÁÉÍÓÚÜÑ]")
 
-# Autor institucional: dos o más palabras capitalizadas
-# ("Comisión Nacional de Bioética")
+# Autor institucional: dos o más palabras capitalizadas ("Comisión Nacional de Bioética")
 _RE_AUTOR_INSTITUCIONAL = re.compile(
     r"^[A-ZÁÉÍÓÚÜÑ][\w\-']*"
     r"(?:\s+(?:de|del|la|las|los|y|e|of|the|[A-ZÁÉÍÓÚÜÑ][\w\-']))+"
@@ -62,22 +56,18 @@ _VENTANA_CITA = 60
 
 
 def _normalizar(texto: str) -> str:
-    """Junta el texto en una sola línea, sin saltos ni espacios dobles."""
     return " ".join(texto.split())
 
 
 def extraer_citas(textoSeccion: str) -> list[str]:
-    """Separa la sección de referencias en citas individuales.
+    """
+    Separa la sección de referencias en citas individuales
 
-    Las citas vienen sin numerar y partidas en varias líneas, con
-    números de página, viñetas ("•") y la firma de la autora
-    intercalados. Se acumulan las líneas hasta que aparece una que
-    inicia una cita nueva (mayúscula + año); los encabezados, las
-    firmas y los números de página se ignoran.
+    Las citas vienen sin numerar y partidas en varias líneas, con números de página, viñetas ("•") y la firma de la autora intercalados. La idea es ir acumulando líneas en 'actual' hasta que aparece una que inicia una cita nueva (empieza con mayúscula y trae un año entre paréntesis); en ese momento se cierra la cita anterior. Los encabezados, las firmas y los números de página se ignoran, y al final se descartan los bloques que quedaron sin año
     """
     citas: list[str] = []
     actual: list[str] = []
-    enCita = False
+    enCita = False  # indica si estamos dentro de una cita o en el ruido entre citas
 
     def cerrar_actual() -> None:
         nonlocal actual, enCita
@@ -90,8 +80,7 @@ def extraer_citas(textoSeccion: str) -> list[str]:
         linea = linea.strip().lstrip("•*-–—").strip()
         if not linea or _RE_LINEA_RUIDO.match(linea) or _RE_ENCABEZADO.search(linea):
             continue
-        # Una línea de puros nombres capitalizados sin año es la firma
-        # de la autora y marca el fin de la sección de referencias
+        # Una línea de puros nombres capitalizados sin año es la firma de la autora y marca el fin de la sección
         if _RE_FIN_SECCION.match(linea) and not _RE_ANIO.search(linea):
             cerrar_actual()
             continue
@@ -108,21 +97,21 @@ def extraer_citas(textoSeccion: str) -> list[str]:
 
 
 def es_apa7(cita: str) -> tuple[bool, str | None]:
-    """Valida que la cita tenga la estructura APA 7.
+    """
+    Valida que la cita tenga la estructura APA 7
 
-    Se espera 'Autor(es). (Año). Título. Fuente', donde la fuente puede
-    ser editorial/revista, un URL/DOI, o quedar implícita cuando el
-    autor es una institución. Regresa '(True, None)' si cumple, o
-    '(False, motivo)' con el motivo en español para mostrarlo en la GUI.
+    Se espera 'Autor(es). (Año). Título. Fuente', donde la fuente puede ser editorial/revista, un URL/DOI, o quedar implícita cuando el autor es una institución. Regresa '(True, None)' si cumple, o '(False, motivo)' con el motivo en español para mostrarlo en la GUI
     """
     cita = _normalizar(cita)
     if not cita:
         return False, "cita vacía"
 
+    # Debe traer el año entre paréntesis
     anio = _RE_ANIO.search(cita)
     if anio is None:
         return False, "falta el año de publicación (se espera (2021) o (n.d.))"
 
+    # Lo que está antes del año es el autor: "Apellido, I." o un organismo
     autores = cita[: anio.start()].strip().rstrip(".").strip()
     if not autores:
         return False, "falta el autor (se espera Apellido, I. u organismo)"
@@ -132,6 +121,7 @@ def es_apa7(cita: str) -> tuple[bool, str | None]:
     ):
         return False, "autor con formato no APA 7 (se espera Apellido, I. u organismo)"
 
+    # Después del año va un punto, luego el título y la fuente
     resto = cita[anio.end():].lstrip()
     if not resto.startswith("."):
         return False, "formato no APA 7: falta el punto después del año"
@@ -139,8 +129,7 @@ def es_apa7(cita: str) -> tuple[bool, str | None]:
     if len(resto) < 10:
         return False, "falta el título del trabajo"
 
-    # Sin URL ni segunda parte después del título solo pasa si el
-    # autor es una institución (edita su propio informe)
+    # La fuente puede ser editorial/revista o un enlace, solo se exige cuando el autor no es una institución (que edita su propio informe)
     segmentos = [s for s in re.split(r"\.\s+", resto) if s]
     tieneUrl = bool(_RE_URL.search(resto))
     if (
@@ -153,29 +142,27 @@ def es_apa7(cita: str) -> tuple[bool, str | None]:
 
 
 def cita_en_cuerpo(cita: str, cuerpo: str) -> bool:
-    """Indica si la cita aparece mencionada en el cuerpo del documento.
+    """
+    Indica si la cita aparece mencionada en el cuerpo del documento
 
-    Reconoce las formas narrativas y parentéticas habituales:
-    'Abreu (2021)', 'Abreu et al. (2021)', '(Ito, 1991:1)' y las
-    variantes sin fecha '(n.d.)' / '(s.f.)'.
+    Reconoce las formas narrativas y parentéticas habituales: 'Abreu (2021)', 'Abreu et al. (2021)', '(Ito, 1991:1)' y las variantes sin fecha '(n.d.)' / '(s.f.)'
     """
     cita = _normalizar(cita)
     anio = _RE_ANIO.search(cita)
     if anio is None:
         return False
 
+    # Se saca el primer apellido de la cita para buscarlo en el cuerpo
     bloqueAutores = cita[: anio.start()].strip().rstrip(".")
     if not bloqueAutores:
         return False
-    # Se toma el primer apellido (o la primera palabra si es institucional)
     if "," in bloqueAutores:
         apellido = bloqueAutores.split(",")[0].split()[0]
     else:
         apellido = bloqueAutores.split()[0]
     apellido = re.escape(apellido)
 
-    # El apellido y el año deben aparecer juntos, con hasta
-    # _VENTANA_CITA caracteres de distancia entre ambos
+    # Se arma un patrón que exige apellido y año juntos en el cuerpo, con hasta _VENTANA_CITA caracteres de distancia (cubre "Apellido (2021)", "(Apellido, 2021)", "Apellido et al. (2021)")
     if anio.group("anio").isdigit():
         patron = (
             rf"{apellido}\b[^;\n]{{0,{_VENTANA_CITA}}}?"
@@ -190,10 +177,10 @@ def cita_en_cuerpo(cita: str, cuerpo: str) -> bool:
 
 
 def filtrar_citas(citas: list[str], cuerpo: str) -> dict:
-    """Filtra las citas: primero la estructura APA 7 y luego la citación.
+    """
+    Filtra las citas: primero la estructura APA 7 y luego la citación
 
-    Regresa '{"validas": [...], "excluidas": [{"cita": ..., "motivo": ...}]}'
-    donde cada excluida lleva el motivo por el que no pasó.
+    Regresa '{"validas": [...], "excluidas": [{"cita": ..., "motivo": ...}]}' donde cada excluida lleva el motivo por el que no pasó
     """
     validas: list[str] = []
     excluidas: list[dict] = []

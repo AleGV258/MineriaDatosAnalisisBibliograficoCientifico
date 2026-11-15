@@ -1,14 +1,3 @@
-"""Exporta el análisis de frecuencias a un CSV.
-
-Recibe los resultados de 'ExcluirCitas.extraerReferencias.analizar_documento'
-y escribe en 'datos/salida' un CSV con una sección por variable
-(Autores, Títulos, Años, Editoriales). En cada sección las filas son
-los valores encontrados y las columnas los documentos más un total,
-para comparar la bibliografía de cada protocolo.
-"""
-
-from __future__ import annotations
-
 import csv
 from pathlib import Path
 
@@ -29,11 +18,6 @@ NOMBRE_ARCHIVO = "AnalisisFrecuenciasBibliograficas.csv"
 
 
 def _documentos_y_citas(resultados) -> list[tuple[str, list[str]]]:
-    """Normaliza la entrada a pares (nombre_documento, citas_validas).
-
-    Acepta los dicts de 'analizar_documento' o citas sueltas en texto,
-    que se agrupan todas bajo el nombre 'Citas'.
-    """
     documentos = []
     for elemento in resultados:
         if isinstance(elemento, dict):
@@ -47,12 +31,12 @@ def _documentos_y_citas(resultados) -> list[tuple[str, list[str]]]:
 
 
 def _matriz_frecuencias(contar, documentos) -> tuple[list[str], list[list[int]]]:
-    """Arma la tabla valor × documento para una variable.
+    """
+    Arma la tabla valor × documento para una variable
 
-    Corre el contador sobre las citas válidas de cada documento y
-    cruza los conteos: una fila por valor distinto, una columna por
-    documento y al final la columna 'Total'. Las filas van ordenadas
-    por total descendente. Regresa (nombres_documentos, matriz).
+    Corre el contador sobre las citas válidas de cada documento y cruza los conteos en una matriz donde cada fila es un valor distinto y cada columna un documento, más una última columna con el total. Las filas van ordenadas por total descendente
+    Ejemplo con 2 documentos: [['Martínez', 2, 0, 2], ['Wang', 0, 1, 1]]
+    Regresa (nombres_de_los_documentos, matriz)
     """
     conteos = []
     for nombre, citas in documentos:
@@ -76,7 +60,6 @@ def _matriz_frecuencias(contar, documentos) -> tuple[list[str], list[list[int]]]
 
 
 def _escribir_seccion(escritor, titulo, contar, documentos) -> None:
-    """Escribe una sección del CSV: encabezado, filas y línea vacía."""
     nombres, matriz = _matriz_frecuencias(contar, documentos)
     escritor.writerow([titulo] + nombres + ["Total"])
     escritor.writerows(matriz)
@@ -84,10 +67,10 @@ def _escribir_seccion(escritor, titulo, contar, documentos) -> None:
 
 
 def exportar_frecuencias_CSV(resultados, directorio=None) -> Path:
-    """Genera el CSV del análisis de frecuencias en 'datos/salida'.
+    """
+    Genera el CSV del análisis de frecuencias en 'datos/salida'
 
-    Recibe los resultados de 'analizar_documento' y escribe
-    'AnalisisFrecuenciasBibliograficas.csv'. Regresa la ruta creada.
+    Recibe los resultados de 'analizar_documento' y escribe 'AnalisisFrecuenciasBibliograficas.csv'. Regresa la ruta creada
     """
     if directorio is None:
         directorio = (

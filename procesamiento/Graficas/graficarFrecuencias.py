@@ -1,15 +1,3 @@
-"""Gráficas de frecuencias por variable.
-
-Recibe la salida de 'analizarFrecuencias.frecuencias', un dict con las
-claves "autores", "titulos", "anios" y "editoriales", donde cada valor es
-un DataFrame con columnas ["valor", "frecuencia"] (frecuencia absoluta).
-Devuelve una figura matplotlib por variable, lista para incrustarse en la
-GUI con 'FigureCanvasTkAgg', y permite guardarlas como PNG.
-"""
-
-
-from __future__ import annotations
-
 import contextlib
 from pathlib import Path
 import matplotlib
@@ -39,7 +27,6 @@ COLOR_BARRAS = "#4C72B0"
 
 
 def _figura_vacia(titulo: str) -> plt.Figure:
-    """Figura de respaldo cuando una variable no tiene datos."""
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.set_title(titulo)
     ax.text(0.5, 0.5, "Sin datos", ha="center", va="center", fontsize=14)
@@ -48,10 +35,10 @@ def _figura_vacia(titulo: str) -> plt.Figure:
 
 
 def _ordenar(df: pd.DataFrame, clave: str) -> pd.DataFrame:
-    """Ordena y recorta la tabla según la variable.
+    """
+    Ordena y recorta la tabla según la variable
 
-    'anios' muestra todos los años en orden ascendente; el resto se
-    ordena por frecuencia descendente y se recorta al top TOP_N.
+    'anios' muestra todos los años en orden ascendente; el resto se ordena por frecuencia descendente y se recorta al top TOP_N
     """
     df = df.copy()
     if clave == "anios":
@@ -62,12 +49,10 @@ def _ordenar(df: pd.DataFrame, clave: str) -> pd.DataFrame:
 
 
 def generar_graficas(frecuencias: dict) -> dict:
-    """Genera una figura matplotlib por cada variable.
+    """
+    Genera una figura matplotlib por cada variable.
 
-    'anios' usa barras verticales; el resto usa barras horizontales
-    porque los nombres (autores, títulos, editoriales) son largos y se
-    leerían cortados en vertical. Una variable sin datos devuelve una
-    figura con el texto "Sin datos". Regresa un dict {clave: figura}.
+    'anios' usa barras verticales; el resto usa barras horizontales porque los nombres (autores, títulos, editoriales) son largos y se leerían cortados en vertical. Una variable sin datos devuelve una figura con el texto "Sin datos". Regresa un dict {clave: figura}
     """
     figuras: dict = {}
     for clave, titulo in TITULOS.items():
@@ -103,11 +88,10 @@ def generar_graficas(frecuencias: dict) -> dict:
 
 
 def guardar_graficas(figuras: dict, directorio: str | Path) -> list[Path]:
-    """Guarda cada figura como '<clave>.png' dentro de 'directorio'.
+    """
+    Guarda cada figura como '<clave>.png' dentro de 'directorio'
 
-    Regresa la lista de rutas generadas. Las figuras quedan abiertas
-    después de guardarse; quien las incruste en la GUI sigue siendo
-    su dueño.
+    Regresa la lista de rutas generadas. Las figuras quedan abiertas después de guardarse; quien las incruste en la GUI sigue siendo su dueño
     """
     directorio = Path(directorio)
     directorio.mkdir(parents=True, exist_ok=True)

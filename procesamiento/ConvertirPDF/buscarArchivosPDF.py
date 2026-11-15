@@ -1,18 +1,11 @@
-"""Búsqueda de los PDFs dentro de una carpeta.
-
-Recorre el directorio que elige el usuario en la interfaz y devuelve
-la lista de archivos PDF encontrados (nombre y ruta), ordenados
-alfabéticamente.
-"""
-
 from pathlib import Path
 
 
 def buscar_archivos_PDF(rutaDirectorio):
-    """Regresa la lista de PDFs del directorio como diccionarios.
+    """
+    Regresa la lista de PDFs del directorio como diccionarios
 
-    Cada elemento tiene 'nombre' y 'ruta'. Si la carpeta no existe
-    truena con ValueError.
+    Cada elemento tiene 'nombre' y 'ruta'. Si la carpeta no existe truena con ValueError
     """
     rutaDirectorio = Path(rutaDirectorio)
 

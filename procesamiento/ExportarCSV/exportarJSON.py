@@ -1,14 +1,3 @@
-"""Exporta las citas filtradas y las frecuencias a JSON.
-
-Recibe los resultados de 'ExcluirCitas.extraerReferencias.analizar_documento'
-y las tablas de 'AnalisisFrecuencias.analizarFrecuencias.frecuencias',
-y los escribe como JSON en 'datos/salida'. Los DataFrames se convierten
-a listas de registros con 'valor' y 'frecuencia' para que el JSON se
-pueda leer con cualquier visor o reimportar en pandas.
-"""
-
-from __future__ import annotations
-
 import json
 from pathlib import Path
 
@@ -17,7 +6,6 @@ NOMBRE_FRECUENCIAS = "analisisFrecuencias.json"
 
 
 def _carpeta_salida(directorio=None) -> Path:
-    """Regresa la carpeta de salida ('datos/salida' por defecto)."""
     if directorio is None:
         directorio = (
             Path(__file__).resolve().parents[2] / "datos" / "salida"
@@ -28,7 +16,6 @@ def _carpeta_salida(directorio=None) -> Path:
 
 
 def _escribir_JSON(datos, nombre: str, directorio=None) -> Path:
-    """Serializa 'datos' a JSON con indentación y regresa la ruta."""
     ruta = _carpeta_salida(directorio) / nombre
     with open(ruta, "w", encoding="utf-8") as archivo:
         json.dump(datos, archivo, ensure_ascii=False, indent=2)
@@ -36,10 +23,10 @@ def _escribir_JSON(datos, nombre: str, directorio=None) -> Path:
 
 
 def exportar_citas_JSON(resultados, directorio=None) -> Path:
-    """Exporta las citas válidas y excluidas de cada documento.
+    """
+    Exporta las citas válidas y excluidas de cada documento
 
-    Escribe un JSON con una entrada por documento: nombre, citas
-    válidas, excluidas con su motivo y los conteos. Regresa la ruta.
+    Escribe un JSON con una entrada por documento: nombre, citas válidas, excluidas con su motivo y los conteos. Regresa la ruta
     """
     datos = [
         {
@@ -56,11 +43,11 @@ def exportar_citas_JSON(resultados, directorio=None) -> Path:
 
 
 def exportar_frecuencias_JSON(frecuencias: dict, directorio=None) -> Path:
-    """Exporta las tablas de frecuencia como listas de registros.
+    """
+    Exporta las tablas de frecuencia como listas de registros
 
-    Recibe el dict de 'analizarFrecuencias.frecuencias' y escribe un
-    JSON donde cada tabla es una lista de {'valor': ..., 'frecuencia': ...}.
-    Regresa la ruta creada.
+    Recibe el dict de 'analizarFrecuencias.frecuencias' y escribe un JSON donde cada tabla es una lista de {'valor': ..., 'frecuencia': ...}
+    Regresa la ruta creada
     """
     datos = {
         clave: df.to_dict(orient="records")

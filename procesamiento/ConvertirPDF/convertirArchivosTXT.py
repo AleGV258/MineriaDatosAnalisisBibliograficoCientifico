@@ -1,19 +1,13 @@
-"""Convierte los PDFs encontrados a archivos TXT.
-
-Recibe la lista que devuelve 'buscarArchivosPDF.buscar_archivos_PDF',
-extrae el texto de cada documento con 'extraerTextoPDF.extraer_texto_PDF'
-y lo guarda como TXT en 'datos/salida' con el mismo nombre del PDF.
-"""
-
 from pathlib import Path
 
 from procesamiento.ConvertirPDF.extraerTextoPDF import extraer_texto_PDF
 
 
 def convertir_archivos_TXT(archivosPDF):
-    """Convierte cada PDF de la lista a TXT en 'datos/salida'.
+    """
+    Convierte cada PDF de la lista a TXT en 'datos/salida'
 
-    Regresa la lista con los nombres de los TXT generados.
+    Regresa la lista con los nombres de los TXT generados
     """
     carpetaSalida = (
         Path(__file__).resolve().parents[2]
