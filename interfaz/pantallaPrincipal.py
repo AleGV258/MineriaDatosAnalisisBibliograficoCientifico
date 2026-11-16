@@ -10,6 +10,7 @@ from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog, ttk, messagebox
 
+import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from procesamiento.ConvertirPDF.buscarArchivosPDF import buscar_archivos_PDF
@@ -133,7 +134,7 @@ class VentanaPrincipal(ctk.CTk):
 
         self.btnExportar = ctk.CTkButton(
             self.panelDocs,
-            text="Exportar a CSV",
+            text="Exportar a CSV y gráficas",
             command=self.iniciar_exportacion,
             height=40
         )
@@ -150,9 +151,10 @@ class VentanaPrincipal(ctk.CTk):
         )
         self.lblGraficas.pack(pady=20)
 
+        # Línea de estado: informa el resultado de cada acción del flujo
         self.lblMensaje = ctk.CTkLabel(
             self.panelGraficas,
-            text="Análisis de frecuencias",
+            text="Selecciona una carpeta de protocolos para empezar",
             text_color="gray"
         )
         self.lblMensaje.pack(pady=20)
@@ -191,6 +193,9 @@ class VentanaPrincipal(ctk.CTk):
             return
 
         archivosConvertidos = convertir_archivos_TXT(self.pdfs)
+        self.lblMensaje.configure(
+            text=f"{len(archivosConvertidos)} documentos convertidos a TXT"
+        )
 
         messagebox.showinfo(
             "Conversión finalizada",
@@ -209,20 +214,52 @@ class VentanaPrincipal(ctk.CTk):
             )
             return
 
+        self.lblMensaje.configure(text=f"Analizando {len(archivosTXT)} documentos...")
+        self.update_idletasks()
+
+        # Los TXT vacíos provienen de PDF sin capa de texto (escaneados):
+        # se detectan y quedan fuera del análisis para reportarse al usuario
+        sinTexto = [
+            txt.name for txt in archivosTXT
+            if not txt.read_text(encoding="utf-8", errors="ignore").strip()
+        ]
+
         self.resultados = [
             analizar_documento(txt) for txt in archivosTXT
+            if txt.name not in sinTexto
         ]
+
+        if not self.resultados:
+            self.lblMensaje.configure(text="Ningún documento tiene texto extraíble")
+            messagebox.showwarning(
+                "Sin texto",
+                "Ningún TXT tiene texto extraíble (todos los PDF parecen escaneados)"
+            )
+            return
+
         self.frecuencias = frecuencias(self.resultados)
         self.mostrar_graficas()
         exportar_citas_JSON(self.resultados)
         exportar_frecuencias_JSON(self.frecuencias)
 
         totalValidas = sum(r["n_validas"] for r in self.resultados)
-        messagebox.showinfo(
-            "Análisis finalizado",
-            f"Se analizaron {len(archivosTXT)} documentos\n"
+        estado = (
+            f"Listo: {totalValidas} citas válidas en {len(self.resultados)} documentos"
+        )
+        if sinTexto:
+            estado += f" · {len(sinTexto)} sin texto ({', '.join(sinTexto)})"
+        self.lblMensaje.configure(text=estado)
+
+        resumen = (
+            f"Se analizaron {len(self.resultados)} documentos\n"
             f"Citas válidas: {totalValidas}"
         )
+        if sinTexto:
+            resumen += (
+                "\n\nSin texto extraíble (probablemente escaneados):\n"
+                + ", ".join(sinTexto)
+            )
+        messagebox.showinfo("Análisis finalizado", resumen)
 
     def iniciar_exportacion(self):
         """Exporta el análisis a CSV y guarda las gráficas como PNG."""
@@ -240,6 +277,8 @@ class VentanaPrincipal(ctk.CTk):
         )
         guardar_graficas(self.figurasFrecuencias, carpetaGraficas)
 
+        self.lblMensaje.configure(text="CSV y gráficas guardados en datos/salida")
+
         messagebox.showinfo(
             "Exportación finalizada",
             f"Se guardó el CSV en:\n{rutaCSV}\n\n"
@@ -248,10 +287,16 @@ class VentanaPrincipal(ctk.CTk):
 
     def mostrar_graficas(self):
         """Dibuja las frecuencias en pestañas, una por variable."""
-        # Se limpian los widgets anteriores del panel derecho
+        # Se limpian los widgets anteriores del panel derecho (la línea de
+        # estado se conserva) y se liberan las figuras del análisis previo
         for widget in self.panelGraficas.winfo_children():
-            if widget != self.lblGraficas:
+            if widget not in (self.lblGraficas, self.lblMensaje):
                 widget.destroy()
+
+        if getattr(self, "figurasFrecuencias", None):
+            for figura in self.figurasFrecuencias.values():
+                figura.clear()
+                plt.close(figura)
 
         self.figurasFrecuencias = generar_graficas(self.frecuencias)
 
