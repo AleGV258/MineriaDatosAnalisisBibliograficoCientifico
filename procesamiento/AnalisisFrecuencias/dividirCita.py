@@ -46,7 +46,7 @@ def tokenizar_cita(cita: str) -> dict:
 
     La estructura que se espera es: Apellido, I., & Apellido, I. (Año). Título. Fuente, vol(núm), págs. URL
     El proceso se basa en localizar el año entre paréntesis, todo lo anterior es el bloque de autores; lo que sigue al año se parte por puntos y el primer segmento es el título, el resto es la fuente de donde se saca la editorial (se corta en el enlace y en la primera coma para quitar volumen, número y páginas)
-    Regresa un diccionario con las claves 'autores' (lista de apellidos), 'anio', 'titulo' y 'editorial'. Las fechas sin año ('n.d.' / 's.f.') se homologan como '"s/f"'. Si alguna parte no se puede extraer queda vacía; los contadores ignoran los vacíos
+    Regresa un diccionario con las claves 'autores' (lista de 'Apellido, I.'), 'anio', 'titulo' y 'editorial'. Las fechas sin año ('n.d.' / 's.f.') se homologan como '"s/f"'. Si alguna parte no se puede extraer queda vacía; los contadores ignoran los vacíos
     """
     cita = _limpieza(cita)
 
@@ -54,15 +54,11 @@ def tokenizar_cita(cita: str) -> dict:
     if anio is None:
         return {"autores": [], "anio": "", "titulo": "", "editorial": ""}
 
-    # Autores: todo lo que está antes del año. El bloque se ve así: "Cabello, J. M., Bru, E., & Junco, S." y cada unidad "Apellido, I." se reduce a su apellido -> ["Cabello", "Bru", "Junco"]
+    # Autores: todo lo que está antes del año. El bloque se ve así: "Cabello, J. M., Bru, E., & Junco, S." y cada unidad "Apellido, I." se conserva completa para no fusionar homónimos -> ["Cabello, J. M.", "Bru, E.", "Junco, S."]
     bloqueAutores = cita[: anio.start()].rstrip(".").strip()
     unidades = [m.group(0).strip() for m in _RE_SEPARADOR_AUTORES.finditer(bloqueAutores)]
     # Si no hay iniciales se conserva el bloque completo (autor institucional)
-    autores = (
-        [_nombre_autor(parte) for parte in unidades]
-        if unidades
-        else [_nombre_autor(bloqueAutores)] if bloqueAutores else []
-    )
+    autores = unidades if unidades else [_nombre_autor(bloqueAutores)] if bloqueAutores else []
 
     # Transformación: las fechas sin dígitos (n.d., s.f.) se homologan como "s/f" para que todas se vean igual
     anioValor = anio.group("anio").strip()
