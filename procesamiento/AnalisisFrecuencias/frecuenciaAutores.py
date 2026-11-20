@@ -6,15 +6,15 @@ from procesamiento.AnalisisFrecuencias.dividirCita import tokenizar_cita
 
 def contar_autores(citas: list[str]) -> pd.DataFrame:
     """
-    Cuenta la frecuencia de cada autor en la lista de citas
+    Cuenta la frecuencia del autor principal (el primero) de cada cita
 
-    Regresa un DataFrame con columnas 'valor' y 'frecuencia', ordenado de mayor a menor frecuencia. Si un autor sale repetido dentro de la misma cita solo cuenta una vez
+    Regresa un DataFrame con columnas 'valor' y 'frecuencia', ordenado de mayor a menor frecuencia. Los coautores no se cuentan: la variable autores se define por el primer autor de cada referencia
     """
     conteo: Counter = Counter()
     for cita in citas:
-        for autor in dict.fromkeys(tokenizar_cita(cita)["autores"]):
-            if autor:
-                conteo[autor] += 1
+        autores = tokenizar_cita(cita)["autores"]
+        if autores and autores[0]:
+            conteo[autores[0]] += 1
     return _a_dataframe(conteo)
 
 
