@@ -1,4 +1,16 @@
+import sys
 from pathlib import Path
+
+
+def carpeta_salida() -> Path:
+    """
+    Carpeta 'datos/salida' junto al programa o al .exe
+
+    Se resuelve la ruta para el ejecutable y que en su misma ruta se cree la carpeta de salida
+    """
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "datos" / "salida"
+    return Path(__file__).resolve().parents[2] / "datos" / "salida"
 
 
 def buscar_archivos_PDF(rutaDirectorio):

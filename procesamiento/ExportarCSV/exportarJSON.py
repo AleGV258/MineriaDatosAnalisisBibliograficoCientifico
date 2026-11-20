@@ -1,15 +1,15 @@
 import json
 from pathlib import Path
 
+from procesamiento.ConvertirPDF.buscarArchivosPDF import carpeta_salida
+
 NOMBRE_CITAS = "citasFiltradas.json"
 NOMBRE_FRECUENCIAS = "analisisFrecuencias.json"
 
 
 def _carpeta_salida(directorio=None) -> Path:
     if directorio is None:
-        directorio = (
-            Path(__file__).resolve().parents[2] / "datos" / "salida"
-        )
+        directorio = carpeta_salida()
     carpeta = Path(directorio)
     carpeta.mkdir(parents=True, exist_ok=True)
     return carpeta

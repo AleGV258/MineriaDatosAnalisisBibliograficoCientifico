@@ -5,6 +5,7 @@ from procesamiento.AnalisisFrecuencias.frecuenciaAutores import contar_autores
 from procesamiento.AnalisisFrecuencias.frecuenciaTitulos import contar_titulos
 from procesamiento.AnalisisFrecuencias.frecuenciaAnios import contar_anios
 from procesamiento.AnalisisFrecuencias.frecuenciaEditoriales import contar_editoriales
+from procesamiento.ConvertirPDF.buscarArchivosPDF import carpeta_salida
 
 # Sección del CSV y el contador de frecuencias que le toca
 VARIABLES = [
@@ -73,9 +74,7 @@ def exportar_frecuencias_CSV(resultados, directorio=None) -> Path:
     Recibe los resultados de 'analizar_documento' y escribe 'AnalisisFrecuenciasBibliograficas.csv'. Regresa la ruta creada
     """
     if directorio is None:
-        directorio = (
-            Path(__file__).resolve().parents[2] / "datos" / "salida"
-        )
+        directorio = carpeta_salida()
     directorio = Path(directorio)
     directorio.mkdir(parents=True, exist_ok=True)
 

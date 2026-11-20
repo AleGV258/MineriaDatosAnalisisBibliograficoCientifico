@@ -5,15 +5,13 @@ listado de los PDF, conversión a TXT, análisis de frecuencias con
 sus gráficas en pestañas y exportación a CSV/JSON/PNG.
 """
 
-from pathlib import Path
-
 import customtkinter as ctk
 from tkinter import filedialog, ttk, messagebox
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from procesamiento.ConvertirPDF.buscarArchivosPDF import buscar_archivos_PDF
+from procesamiento.ConvertirPDF.buscarArchivosPDF import buscar_archivos_PDF, carpeta_salida
 from procesamiento.ConvertirPDF.convertirArchivosTXT import convertir_archivos_TXT
 from procesamiento.ExcluirCitas.extraerReferencias import analizar_documento
 from procesamiento.AnalisisFrecuencias.analizarFrecuencias import frecuencias
@@ -21,12 +19,18 @@ from procesamiento.Graficas.graficarFrecuencias import generar_graficas, guardar
 from procesamiento.ExportarCSV.exportarCSV import exportar_frecuencias_CSV
 from procesamiento.ExportarCSV.exportarJSON import exportar_citas_JSON, exportar_frecuencias_JSON
 
+
 class VentanaPrincipal(ctk.CTk):
 
     def __init__(self):
         super().__init__()
         self.title("Minería de Textos")
         self.geometry("1100x700")
+
+        # Icono de la aplicacion
+        icono = carpeta_salida().parent / "Icon.ico"
+        if icono.exists():
+            self.iconbitmap(str(icono))
 
         self.carpeta = ""
         self.pdfs = []
@@ -204,7 +208,7 @@ class VentanaPrincipal(ctk.CTk):
 
     def iniciar_analisis(self):
         """Analiza los TXT de 'datos/salida' y genera frecuencias, gráficas y JSON."""
-        carpetaSalida = Path(__file__).resolve().parents[1] / "datos" / "salida"
+        carpetaSalida = carpeta_salida()
         archivosTXT = sorted(carpetaSalida.glob("*.txt"))
 
         if not archivosTXT:
@@ -272,9 +276,7 @@ class VentanaPrincipal(ctk.CTk):
 
         rutaCSV = exportar_frecuencias_CSV(self.resultados)
 
-        carpetaGraficas = (
-            Path(__file__).resolve().parents[1] / "datos" / "salida" / "graficas"
-        )
+        carpetaGraficas = carpeta_salida() / "graficas"
         guardar_graficas(self.figurasFrecuencias, carpetaGraficas)
 
         self.lblMensaje.configure(text="CSV y gráficas guardados en datos/salida")

@@ -13,3 +13,6 @@ datos/salida/*
 
 # Se conservan las carpetas
 !datos/entrada/Aqui_van_los_ficheros.txt .gitkeep
+
+# Ejecutable generado por PyInstaller
+*.exe

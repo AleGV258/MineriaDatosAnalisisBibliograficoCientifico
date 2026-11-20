@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from procesamiento.ConvertirPDF.buscarArchivosPDF import carpeta_salida
 from procesamiento.ConvertirPDF.extraerTextoPDF import extraer_texto_PDF
 
 
@@ -9,11 +10,7 @@ def convertir_archivos_TXT(archivosPDF):
 
     Regresa la lista con los nombres de los TXT generados
     """
-    carpetaSalida = (
-        Path(__file__).resolve().parents[2]
-        / "datos"
-        / "salida"
-    )
+    carpetaSalida = carpeta_salida()
     carpetaSalida.mkdir(parents=True, exist_ok=True)
 
     archivosConvertidos = []
